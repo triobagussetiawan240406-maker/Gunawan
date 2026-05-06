@@ -17,37 +17,41 @@ export async function runCode(
     }
   }
 
-  // Prepare detailed execution prompt for Groq
-  const executionPrompt = language === 'python' 
-    ? `You are a Python code executor. Execute this Python code and return ONLY the output or error message. Do not add any explanation.
+  // Prepare execution prompt - more explicit for better LLM understanding
+  let executionPrompt = ''
+  
+  if (language === 'python') {
+    executionPrompt = `Execute the following Python code step by step and return ONLY the output. If there's an error, return ERROR: [error message].
 
-${input ? `Input (stdin) that should be provided: ${input}` : 'No input required'}
-
-Code to execute:
-\`\`\`python
+CODE:
 ${code}
-\`\`\`
 
-Instructions:
-1. Execute the code exactly as a Python interpreter would
-2. If input is provided above, treat it as stdin input (for input() calls)
-3. Return ONLY the output
-4. If there's an error, return: ERROR: [error message]
-5. Do not include any markdown formatting or explanation`
-    : `You are a JavaScript code executor. Execute this JavaScript code and return ONLY the output or error message. Do not add any explanation.
+${input ? `STDIN INPUT (for input() calls):\n${input}` : ''}
 
-${input ? `Input (stdin) that should be provided: ${input}` : 'No input required'}
+EXECUTION RULES:
+- Execute this code as Python 3 interpreter would
+- If input is provided, use it for any input() calls
+- Return ONLY the program output (nothing else)
+- If error occurs, format as: ERROR: [exact error message]
+- No explanations, no markdown, no code blocks
 
-Code to execute:
-\`\`\`javascript
+OUTPUT:`
+  } else {
+    executionPrompt = `Execute the following JavaScript code step by step and return ONLY the output. If there's an error, return ERROR: [error message].
+
+CODE:
 ${code}
-\`\`\`
 
-Instructions:
-1. Execute the code exactly as Node.js would
-2. Return ONLY the output
-3. If there's an error, return: ERROR: [error message]
-4. Do not include any markdown formatting or explanation`
+${input ? `STDIN INPUT (for readline/input):\n${input}` : ''}
+
+EXECUTION RULES:
+- Execute this code as Node.js interpreter would
+- Return ONLY the program output (nothing else)
+- If error occurs, format as: ERROR: [exact error message]
+- No explanations, no markdown, no code blocks
+
+OUTPUT:`
+  }
 
   try {
     const response = await fetch(GROQ_API_URL, {
@@ -60,7 +64,7 @@ Instructions:
         model: GROQ_MODEL,
         messages: [{ role: 'user', content: executionPrompt }],
         temperature: 0,
-        max_tokens: 1000
+        max_tokens: 2000
       })
     })
 
