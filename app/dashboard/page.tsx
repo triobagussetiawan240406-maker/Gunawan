@@ -271,6 +271,9 @@ export default function Dashboard() {
               <CardBody>
                 <div className="space-y-3">
                   <p className="font-semibold text-white text-lg">{selectedProblem?.title || 'Tidak ada soal dipilih'}</p>
+                  <div className="bg-slate-50 border border-slate-200 rounded-xl p-6 text-slate-700 whitespace-pre-wrap font-mono text-sm leading-relaxed">
+                    {selectedProblem?.description || 'Deskripsi tidak tersedia'}
+                  </div>
                   <div className="flex items-center gap-4 text-sm text-gray-400">
                     <span className="flex items-center gap-1">
                       💻 {selectedProblem?.language || '-'}
