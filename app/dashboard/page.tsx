@@ -5,12 +5,11 @@ import { useCallback, useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { Problem, Submission, Feedback } from '@/lib/types'
-import { Card, CardBody, CardHeader, CardFooter } from '@/components/Card'
+import { Card, CardBody, CardHeader } from '@/components/Card'
 import { CodeEditor } from '@/components/CodeEditor'
 import { SubmissionHistory } from '@/components/SubmissionHistory'
 import { Button } from '@/components/Button'
 import toast from 'react-hot-toast'
-import { AlertCircle, CheckCircle2 } from 'lucide-react'
 
 export default function Dashboard() {
   const router = useRouter()
@@ -212,7 +211,7 @@ export default function Dashboard() {
                 onClick={() => setMode('run')}
                 className={`w-full rounded-xl px-4 py-4 text-left font-medium transition-all duration-300 ${
                   mode === 'run'
-                    ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-lg pulse-glow'
+                    ? 'bg-linear-to-r from-blue-600 to-purple-600 text-white shadow-lg pulse-glow'
                     : 'glass text-gray-300 hover:bg-white/10 hover:text-white'
                 }`}
               >
@@ -228,7 +227,7 @@ export default function Dashboard() {
                 onClick={() => setMode('submit')}
                 className={`w-full rounded-xl px-4 py-4 text-left font-medium transition-all duration-300 ${
                   mode === 'submit'
-                    ? 'bg-gradient-to-r from-green-600 to-teal-600 text-white shadow-lg pulse-glow'
+                    ? 'bg-linear-to-r from-green-600 to-teal-600 text-white shadow-lg pulse-glow'
                     : 'glass text-gray-300 hover:bg-white/10 hover:text-white'
                 }`}
               >
@@ -329,8 +328,8 @@ export default function Dashboard() {
                       </h2>
                       <span className={`text-xs px-3 py-1 rounded-full font-semibold ${
                         language === 'python'
-                          ? 'bg-gradient-to-r from-blue-600 to-blue-700 text-white'
-                          : 'bg-gradient-to-r from-yellow-600 to-yellow-700 text-white'
+                          ? 'bg-linear-to-r from-blue-600 to-blue-700 text-white'
+                          : 'bg-linear-to-r from-yellow-600 to-yellow-700 text-white'
                       }`}>
                         {language === 'python' ? '🐍 Python' : '⚙️ JavaScript'}
                       </span>
@@ -382,7 +381,7 @@ export default function Dashboard() {
                               <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
                               Output
                             </div>
-                            <pre className="text-sm text-gray-200 font-mono whitespace-pre-wrap break-words max-h-64 overflow-auto">
+                            <pre className="text-sm text-gray-200 font-mono whitespace-pre-wrap wrap-break-word max-h-64 overflow-auto">
                               {runOutput}
                             </pre>
                           </div>
@@ -394,7 +393,7 @@ export default function Dashboard() {
                               <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>
                               Error
                             </div>
-                            <pre className="text-sm text-red-200 font-mono whitespace-pre-wrap break-words max-h-64 overflow-auto">
+                            <pre className="text-sm text-red-200 font-mono whitespace-pre-wrap wrap-break-word max-h-64 overflow-auto">
                               {runError}
                             </pre>
                           </div>
@@ -404,7 +403,7 @@ export default function Dashboard() {
                           <div className="flex items-center justify-center h-full text-gray-400">
                             <div className="text-center">
                               <div className="text-3xl mb-2">📤</div>
-                              <p className="text-sm">Klik "Run Code" untuk melihat output</p>
+                              <p className="text-sm">Klik &quot;Run Code&quot; untuk melihat output</p>
                             </div>
                           </div>
                         )}
@@ -422,8 +421,8 @@ export default function Dashboard() {
                       </h2>
                       <span className={`text-xs px-3 py-1 rounded-full font-semibold ${
                         language === 'python'
-                          ? 'bg-gradient-to-r from-blue-600 to-blue-700 text-white'
-                          : 'bg-gradient-to-r from-yellow-600 to-yellow-700 text-white'
+                          ? 'bg-linear-to-r from-blue-600 to-blue-700 text-white'
+                          : 'bg-linear-to-r from-yellow-600 to-yellow-700 text-white'
                       }`}>
                         {language === 'python' ? '🐍 Python' : '⚙️ JavaScript'}
                       </span>
@@ -469,7 +468,7 @@ export default function Dashboard() {
                             <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
                             Output
                           </div>
-                          <pre className="text-sm text-gray-200 font-mono whitespace-pre-wrap break-words max-h-64 overflow-auto">
+                          <pre className="text-sm text-gray-200 font-mono whitespace-pre-wrap wrap-break-word max-h-64 overflow-auto">
                             {runOutput}
                           </pre>
                         </div>
@@ -481,7 +480,7 @@ export default function Dashboard() {
                             <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>
                             Error
                           </div>
-                          <pre className="text-sm text-red-200 font-mono whitespace-pre-wrap break-words max-h-64 overflow-auto">
+                          <pre className="text-sm text-red-200 font-mono whitespace-pre-wrap wrap-break-word max-h-64 overflow-auto">
                             {runError}
                           </pre>
                         </div>
@@ -491,7 +490,7 @@ export default function Dashboard() {
                         <div className="flex items-center justify-center h-full text-gray-400">
                           <div className="text-center">
                             <div className="text-4xl mb-2">📤</div>
-                            <p className="text-sm">Klik "Run Code" untuk melihat output di sini</p>
+                            <p className="text-sm">Klik &quot;Run Code&quot; untuk melihat output di sini</p>
                           </div>
                         </div>
                       )}
@@ -525,8 +524,8 @@ export default function Dashboard() {
                   </h2>
                   <span className={`text-xs px-4 py-2 rounded-full font-semibold ${
                     language === 'python'
-                      ? 'bg-gradient-to-r from-blue-600 to-blue-700 text-white'
-                      : 'bg-gradient-to-r from-yellow-600 to-yellow-700 text-white'
+                      ? 'bg-linear-to-r from-blue-600 to-blue-700 text-white'
+                      : 'bg-linear-to-r from-yellow-600 to-yellow-700 text-white'
                   }`}>
                     {language === 'python' ? '🐍 Python' : '⚙️ JavaScript'}
                   </span>
@@ -669,7 +668,7 @@ export default function Dashboard() {
                           </span>
                           <span className="text-xs bg-amber-500/20 text-amber-300 px-2 py-1 rounded-full font-medium">Saran</span>
                         </div>
-                        <pre className="text-sm text-amber-100 leading-relaxed font-sans whitespace-pre-wrap break-words">{item.message}</pre>
+                        <pre className="text-sm text-amber-100 leading-relaxed font-sans whitespace-pre-wrap wrap-break-word">{item.message}</pre>
                       </div>
                     ))}
                   </CardBody>
