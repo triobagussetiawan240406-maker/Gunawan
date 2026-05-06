@@ -1,110 +1,140 @@
 import { Feedback } from './types'
+import fs from 'fs'
+import path from 'path'
+import os from 'os'
 
 const GROQ_API_KEY = process.env.GROQ_API_KEY
 const GROQ_API_URL =
   process.env.GROQ_API_URL ?? 'https://api.groq.com/openai/v1/chat/completions'
-const GROQ_MODEL = process.env.GROQ_MODEL ?? 'llama3-8b-8192'
+const GROQ_MODEL = process.env.GROQ_MODEL ?? 'llama-3.3-70b-versatile'
 
 export async function runCode(
   code: string,
   input: string,
   language: 'python' | 'javascript'
 ): Promise<{ output: string; error?: string }> {
-  if (!GROQ_API_KEY) {
-    return { 
-      output: '', 
-      error: 'GROQ_API_KEY tidak dikonfigurasi. Silakan set environment variable GROQ_API_KEY.' 
+  const { spawn } = await import('node:child_process')
+
+  return new Promise((resolve) => {
+    let tempFile = ''
+    let childProc: ReturnType<typeof spawn> | null = null
+    let extension = '.py'
+
+    if (language === 'javascript') {
+      extension = '.js'
     }
-  }
 
-  // Prepare prompt for Groq to execute code
-  const executionPrompt = language === 'python' 
-    ? `Jalankan code Python berikut dan kembalikan output atau error yang terjadi.
+    try {
+      // Create a temporary file for the code
+      const tempDir = os.tmpdir()
+      tempFile = path.join(tempDir, `code_${Date.now()}${extension}`)
+      
+      // Write the code to the temp file
+      fs.writeFileSync(tempFile, code)
+      
+      // Run the code with the proper interpreter
+      if (language === 'javascript') {
+        childProc = spawn('node', [tempFile], {
+          stdio: ['pipe', 'pipe', 'pipe']
+        })
+      } else {
+        // For Python: use 'python' on Windows, 'python3' on Unix
+        const isWindows = process.platform === 'win32'
+        childProc = spawn(isWindows ? 'python' : 'python3', [tempFile], {
+          stdio: ['pipe', 'pipe', 'pipe'],
+          shell: isWindows
+        })
+      }
 
-INPUT (jika ada):
-${input || '(tidak ada input)'}
-
-CODE:
-\`\`\`python
-${code}
-\`\`\`
-
-PETUNJUK:
-1. Eksekusi code secara literal seperti interpreter Python
-2. Untuk input: gunakan nilai yang diberikan di atas (simulasikan input())
-3. Kembalikan HANYA output code, tanpa penjelasan tambahan
-4. Jika ada error, tampilkan error message
-5. Format response: 
-   - Jika berhasil: output langsung
-   - Jika error: ERROR: [deskripsi error]`
-    : `Jalankan code JavaScript berikut dan kembalikan output atau error yang terjadi.
-
-INPUT (jika ada):
-${input || '(tidak ada input)'}
-
-CODE:
-\`\`\`javascript
-${code}
-\`\`\`
-
-PETUNJUK:
-1. Eksekusi code secara literal seperti Node.js interpreter
-2. Kembalikan HANYA output code, tanpa penjelasan tambahan
-3. Jika ada error, tampilkan error message
-4. Format response:
-   - Jika berhasil: output langsung
-   - Jika error: ERROR: [deskripsi error]`
-
-  try {
-    const response = await fetch(GROQ_API_URL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${GROQ_API_KEY}`
-      },
-      body: JSON.stringify({
-        model: GROQ_MODEL,
-        messages: [{ role: 'user', content: executionPrompt }],
-        temperature: 0,
-        max_tokens: 500
+      if (!childProc) {
+        throw new Error('Failed to start interpreter')
+      }
+      
+      let stdout = ''
+      let stderr = ''
+      
+      childProc.stdout?.on('data', (data) => {
+        stdout += data.toString()
       })
-    })
-
-    if (!response.ok) {
-      const error = await response.json()
-      return {
-        output: '',
-        error: `Groq API Error: ${error.error?.message || 'Unknown error'}`
-      }
+      
+      childProc.stderr?.on('data', (data) => {
+        stderr += data.toString()
+      })
+      
+      childProc.on('close', (exitCode) => {
+        // Clean up temp file
+        try {
+          if (tempFile && fs.existsSync(tempFile)) {
+            fs.unlinkSync(tempFile)
+          }
+        } catch {}
+        
+        if (exitCode !== 0 || stderr) {
+          resolve({ output: '', error: stderr.trim() || `Exit code: ${exitCode}` })
+        } else {
+          resolve({ output: stdout.trim() })
+        }
+      })
+      
+      childProc.on('error', (error) => {
+        // Clean up temp file
+        try {
+          if (tempFile && fs.existsSync(tempFile)) {
+            fs.unlinkSync(tempFile)
+          }
+        } catch {}
+        
+        // Provide helpful error message for missing Python
+        if ((error as any).code === 'ENOENT') {
+          if (language === 'python') {
+            const isWindows = process.platform === 'win32'
+            const pythonCmd = isWindows ? 'python' : 'python3'
+            resolve({ 
+              output: '', 
+              error: `${pythonCmd} tidak ditemukan. Instalasi petunjuk:\n` +
+                (isWindows 
+                  ? '1. Download Python dari https://www.python.org/downloads/\n' +
+                    '2. Centang "Add Python to PATH" saat install\n' +
+                    '3. Restart aplikasi ini'
+                  : '1. Jalankan: sudo apt-get install python3\n' +
+                    '2. Atau gunakan package manager sistem Anda')
+            })
+          } else {
+            resolve({ output: '', error: 'Node.js tidak ditemukan di sistem.' })
+          }
+        } else {
+          resolve({ output: '', error: error.message })
+        }
+      })
+      
+      // Send input to stdin
+      childProc.stdin?.write(input)
+      childProc.stdin?.end()
+      
+      // Timeout after 5 seconds
+      setTimeout(() => {
+        if (childProc) {
+          childProc.kill()
+        }
+        try {
+          if (tempFile && fs.existsSync(tempFile)) {
+            fs.unlinkSync(tempFile)
+          }
+        } catch {}
+        resolve({ output: '', error: 'Execution timed out' })
+      }, 5000)
+      
+    } catch (error: any) {
+      // Clean up temp file if it exists
+      try {
+        if (tempFile && fs.existsSync(tempFile)) {
+          fs.unlinkSync(tempFile)
+        }
+      } catch {}
+      
+      resolve({ output: '', error: error.message || 'Execution failed' })
     }
-
-    const json = await response.json()
-    const content = json?.choices?.[0]?.message?.content || ''
-    
-    if (!content) {
-      return {
-        output: '',
-        error: 'Groq API returned empty response'
-      }
-    }
-
-    // Check if output contains error marker
-    if (content.trim().startsWith('ERROR:')) {
-      return {
-        output: '',
-        error: content.trim().replace('ERROR:', '').trim()
-      }
-    }
-
-    return {
-      output: content.trim()
-    }
-  } catch (error: any) {
-    return {
-      output: '',
-      error: `Execution failed: ${error.message}`
-    }
-  }
+  })
 }
 
 async function callGroqFeedback(
