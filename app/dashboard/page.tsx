@@ -503,6 +503,21 @@ export default function Dashboard() {
           ) : (
             // Submit Mode
             <>
+              {selectedProblem && (
+                <Card>
+                  <CardHeader className="border-b border-white/10">
+                    <h3 className="font-semibold text-white flex items-center gap-2">
+                      <span className="text-xl">📄</span> Deskripsi Soal: {selectedProblem.title}
+                    </h3>
+                  </CardHeader>
+                  <CardBody>
+                    <div className="bg-slate-900/40 border border-slate-700 rounded-xl p-6 text-slate-300 whitespace-pre-wrap font-mono text-sm leading-relaxed max-h-64 overflow-auto">
+                      {selectedProblem.description || 'Deskripsi tidak tersedia'}
+                    </div>
+                  </CardBody>
+                </Card>
+              )}
+              
               <Card>
                 <CardHeader className="border-b border-white/10 flex items-center justify-between">
                   <h2 className="text-xl font-bold text-white flex items-center gap-2">
